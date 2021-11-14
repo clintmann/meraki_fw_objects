@@ -56,7 +56,7 @@ def read_csv(api_key, org_id):
                 # If there is no key with the Object Group Name create one
                 if obj_grp_name not in linking_dict:
                     linking_dict[obj_grp_name] = list()
-                    print(linking_dict)
+                    print(f"Linking Dictionary: {linking_dict}")
                     linking_dict[obj_grp_name].append(obj_name)
                 else:
                     # Key exists check if object is in the list of values
@@ -97,11 +97,11 @@ def read_csv(api_key, org_id):
                     # Object name already exists
                     print(f"Object name {obj_name} already exists.")            
 
-            # Call function: use Group List to create Groups in Dashboard
-            create_group_obj(api_key, obj_group_lst, org_id)
+            # Call function: to determine if group object exists or needs created
+            check_group_obj(api_key, obj_group_lst, org_id)
 
-            # Call create object function - check if
-
+            # Call function: to determine if network object exists or needs created
+            check_net_obj(api_key, obj_name_lst, org_id)
 
             #print(f"List of Object Name and Group Link {linking_dict_lst}")
             #print(f"List of Object Dictionaries {obj_dict_lst}")
@@ -134,44 +134,121 @@ def read_csv(api_key, org_id):
         print("I/O error")
 
 
-def create_group_obj(api_key, obj_group_lst, org_id):
+def check_group_obj(api_key, obj_group_lst, org_id):
+    #url = f"{base_url}/organizations/{org_id}/policyObjects/groups"
+
+    # Check if the group object already exists using List Group function
+    existing_group_obj = list_group_obj(api_key, org_id)
+    # print(f"Existing Object Groups: {existing_group_obj}")
+    # print(type(existing_group_obj))
+    # Search list of dictionaries to see if group object name exists
+    # Create Object Group for each item in obj_group_lst
     print(f"Object Group List: {obj_group_lst}")
-    print(f"API Key: {api_key}")
-    print(f"Org ID: {org_id}")
-    # for each item in obj_group_lst find
-    url = f"{base_url}/organizations/{org_id}/policyObjects/groups"
- 
     for group in obj_group_lst:
-        try:
-            payload = json.dumps({
-                                  'name': group,
-                                  'objectIds': []
-                                })
-            headers = {
-                        'X-Cisco-Meraki-API-Key': api_key,
-                        'Content-Type': 'application/json'
-                      }
-
-            response = requests.post(url, headers=headers, data=payload)
-            print(response.status_code)  # We want a Status code of 201
-        except HTTPError as http_err:
-            print(f"An HTTP error has occured {http_err}")
-        except Exception as err:
-            print(f"An error has occured {err}")
+        # Search list of dictionaries to see if group object name exists
+        for i in existing_group_obj:
+            #name = i['name']
+            #print(f"Existing Object: {name} Group to Add?: {group}")
+            if i['name'] in obj_group_lst:
+                print(f"Group {group} is already configured in Dashboard.")
+            elif group not in obj_group_lst and group not in existing_group_obj:
+                print("Need to create group")
+                # Call Function to make API Call
+                create_group_post(api_key, org_id, group)
 
 
-def delete_group_obj():
-    print("Deleting group object")
+def check_net_obj(api_key, obj_name_lst, org_id):
+    #url = f"{base_url}/organizations/{org_id}/policyObjects/groups"
+
+    # Check if the group object already exists using List Network Object function
+    existing_net_obj = list_group_obj(api_key, org_id)
+    # print(f"Existing Object Groups: {existing_group_obj}")
+    # print(type(existing_net_obj))
+    # Search list of dictionaries to see if network object name exists
+    # Create Object Group for each item in obj_net_lst
+    print(f"Object Network List: {obj_name_lst}")
+    for group in obj_group_lst:
+        # Search list of dictionaries to see if group object name exists
+        for i in existing_net_obj:
+            #name = i['name']
+            #print(f"Existing Object: {name} Group to Add?: {group}")
+            if i['name'] in obj_name_lst:
+                print(f"Group {group} is already configured in Dashboard.")
+            elif group not in obj_name_lst and group not in existing_net_obj:
+                print("Need to create group")
+                # Call Function to make API Call
+                create_net_obj_post(api_key, org_id, group)
 
 
-def create_net_obj(obj_dict_lst):
+def create_group_post(api_key, org_id, group):
+    url = f"{base_url}/organizations/{org_id}/policyObjects/groups"
+
+    try:
+        print("try")
+        payload = json.dumps({
+                              'name': group,
+                              'objectIds': []
+                            })
+        headers = {
+                   'X-Cisco-Meraki-API-Key': api_key,
+                   'Content-Type': 'application/json'
+                  }
+         
+        response = requests.post(url, headers=headers, data=payload)
+        print(f"Create Group response code {response.status_code}")  # We want a Status code of 201
+
+    except HTTPError as http_err:
+        print(f"An HTTP error has occured {http_err}")
+    except Exception as err:
+        print(f"An error has occured {err}")
+
+    return
+
+
+def list_group_obj(api_key, org_id):
+    # print("List group object function")
+    url = f"{base_url}/organizations/{org_id}/policyObjects/groups"
+    try:
+        payload = {}
+        headers = {
+                    'X-Cisco-Meraki-API-Key': api_key,
+                    'Content-Type': 'application/json'
+                  }
+
+        response = requests.get(url, headers=headers, data=payload)
+        print(f"List Group response code: {response.status_code}")  # We want a Status code of 200
+
+        json_obj_groups = json.loads(response.text)
+
+    except HTTPError as http_err:
+        print(f"An HTTP error has occured {http_err}")
+    except Exception as err:
+        print(f"An error has occured {err}")
+
+    '''
+    Lists Policy Object Groups belonging to the organization.
+     HTTP REQUEST
+     GET/organizations/{organizationId}/policyObjects/groups
+    '''
+    return json_obj_groups
+
+
+def update_group_obj(org_id):
+    url = f"{base_url}/organizations/{org_id}/policyObjects/groups/{policyObjectGroupId}"
+    '''
+     Updates a Policy Object Group.
+     HTTP REQUEST
+     PUT/organizations/{organizationId}/policyObjects/groups/{policyObjectGroupId}
+    '''
+
+
+def create_net_obj_post(obj_dict_lst):
     print(f"Network Object Dictionary List: {obj_dict_lst}")
-    
+
 
 def main():
     api_key, dashboard, org_id = collect_info()
     read_csv(api_key, org_id)
-    #create_group_obj(api_key, obj_group_lst, org_id)
 
 
 if __name__ == "__main__":
