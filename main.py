@@ -15,6 +15,9 @@ linking_dict = {}
 linking_dict_lst = []
 extisting_group_obj_lst = []
 extisting_net_obj_lst = []
+network_obj_lst = []
+obj_id_list = []
+group_policy_obj_lst = []
 base_url = "https://api.meraki.com/api/v1"
 csv_file = "Meraki_Import_test.csv"
 
@@ -59,7 +62,7 @@ def read_csv(csv_file, api_key, org_id):
                 # If there is no key with the Object Group Name create one
                 if obj_grp_name not in linking_dict:
                     linking_dict[obj_grp_name] = list()
-                    print(f"Linking Dictionary: {linking_dict}")
+                    #print(f"Linking Dictionary: {linking_dict}")
                     linking_dict[obj_grp_name].append(obj_name)
                 else:
                     # Key exists check if object is in the list of values
@@ -101,14 +104,14 @@ def read_csv(csv_file, api_key, org_id):
                     print(f"Object name {obj_name} already exists.")
 
             # Call function: to determine if group object exists or needs created
-            check_group_obj(api_key, obj_group_lst, org_id)
+            # +check_group_obj(api_key, obj_group_lst, org_id)
 
             # Call function: to determine if network object exists or needs created
-            check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id)
+            # +check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id)
 
             # Call function: to link network objects to group objects
-
-         
+            link_obj_groups(api_key, org_id, linking_dict)
+        
             # print(f"List of Object Name and Group Link {linking_dict_lst}")
             # print(f"List of Object Dictionaries {obj_dict_lst}")
 
@@ -152,7 +155,7 @@ def check_group_obj(api_key, obj_group_lst, org_id):
         if name not in existing_group_obj:
             # append to list
             extisting_group_obj_lst.append(name)
-  
+
     # Search list of dictionaries to see if group object name exists
     # Create Object Group for each item in obj_group_lst
     for group in obj_group_lst:
@@ -227,8 +230,25 @@ def list_group_obj(api_key, org_id):
     return json_obj_groups
 
 
-def update_group_obj(org_id):
-    url = f"{base_url}/organizations/{org_id}/policyObjects/groups/{policyObjectGroupId}"
+def update_group_obj(api_key, org_id, policy_obj_group_id, payload_body):
+
+    url = f"{base_url}/organizations/{org_id}/policyObjects/groups/{policy_obj_group_id}"
+
+    try:
+        payload = json.dumps(payload_body)
+        headers = {
+                    'X-Cisco-Meraki-API-Key': api_key,
+                    'Content-Type': 'application/json'
+                  }
+
+        response = requests.put(url, headers=headers, data=payload)
+        print(f"List Group response code: {response.status_code}")  # We want a Status code of 201
+
+
+    except HTTPError as http_err:
+        print(f"An HTTP error has occured {http_err}")
+    except Exception as err:
+        print(f"An error has occured {err}")
     '''
      Updates a Policy Object Group.
      HTTP REQUEST
@@ -331,6 +351,83 @@ def create_net_obj_post(api_key, org_id, payload_body):
         print(f"An error has occured {err}")
 
     return
+
+
+def link_obj_groups(api_key, org_id, linking_dict):
+    policy_obj_group_id = ""
+    network_objects = list_network_obj(api_key, org_id)  # this will return a list
+
+    # Create list of existing object names from the list of dictionaries
+    for n in network_objects:
+        name = n['name']
+        id = n['id']
+        network_obj_dict = {
+                                "name": name,
+                                "id": id
+                           }
+        network_obj_lst.append(network_obj_dict)
+    # print(f"Network Object list {network_obj_lst}")
+    #print(type(network_obj_lst))  # this is a list
+
+    group_policy_objects = list_group_obj(api_key, org_id)
+    print(f"Policy Objects: {group_policy_objects}")
+ 
+    # Create list of existing object names from the list of dictionaries
+    for p in group_policy_objects:
+        name = p['name']
+        id = p['id']
+        group_policy_obj_dict = {
+                                "name": name,
+                                "id": id
+                           }
+        group_policy_obj_lst.append(group_policy_obj_dict) # this contains group policy name and id
+    print(f"Policy Object List: {group_policy_obj_lst}")
+
+    # Now link
+    #print(f"Linking Dictionary list {linking_dict}")
+    #print(type(linking_dict))   # this is a dict
+
+    # TESTING/VALIDATION Print linking dictionary
+    for key, value in linking_dict.items():
+        print(key, ' : ', value)
+        val_count = len(value)
+        print(f"Number of policy objects for group {key}: {val_count}")
+        # loop over value list
+        for policy in value:
+            #print(f"Policy: {policy}")
+            for d in network_obj_lst:
+                #print(f"D: {d}")
+                #for x in d.items():
+                name = d['name']
+                id = d['id']
+                #print(f"Name: {name} ID: {id}")
+                #print(network_obj_dict['name'])
+                #print(network_obj_dict['id'])
+                #print(f"x: {x}")
+                #print(f"y: {y}")
+                #pol_name = network_obj_dict['name']
+                #pol_id = network_obj_dict['id']
+                if policy == name:
+                    print(f"Policy: {policy} Policy Name:{name} Policy ID: {id}")
+                    obj_id_list.append(id)
+
+        for g in group_policy_obj_lst:
+            gname = g['name']
+            #print(f"this is gname: {gname}")
+            gid = g['id']
+            #print(f"this is gid: {gid}")
+            #print(f"this is policy: {policy}")
+            if key == gname:
+                policy_obj_group_id = gid
+           
+        payload_body = {"name": key,
+                        "objectIds": obj_id_list
+                        }
+
+        print(f"** Payload: {payload_body}")
+        print(f"* Policy object group id : {policy_obj_group_id}")
+        # policy_obj_group_id = ""
+        update_group_obj(api_key, org_id, policy_obj_group_id, payload_body)
 
 
 def main():
