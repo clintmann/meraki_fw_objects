@@ -211,7 +211,7 @@ def update_group_obj(api_key, org_id, policy_obj_group_id, payload_body):
                   }
 
         response = requests.put(url, headers=headers, data=payload)
-        print(f"List Group response code: {response.status_code}")  # We want a Status code of 201
+        print(f"Update Group response code: {response.status_code}")  # We want a Status code of 201
 
     except HTTPError as http_err:
         print(f"An HTTP error has occured {http_err}")
@@ -333,7 +333,6 @@ def link_obj_groups(api_key, org_id, linking_dict):
         network_obj_lst.append(network_obj_dict)
 
     group_policy_objects = list_group_obj(api_key, org_id)
-    print(f"Policy Objects: {group_policy_objects}")
 
     # Create list of existing object names from the list of dictionaries
     for p in group_policy_objects:
@@ -344,7 +343,6 @@ def link_obj_groups(api_key, org_id, linking_dict):
                                 "id": id
                            }
         group_policy_obj_lst.append(group_policy_obj_dict) # this contains group policy name and id
-    print(f"Policy Object List: {group_policy_obj_lst}")
 
     # TESTING/VALIDATION linking dictionary
     for key, value in linking_dict.items():
@@ -358,7 +356,6 @@ def link_obj_groups(api_key, org_id, linking_dict):
                 name = d['name']
                 id = d['id']
                 if policy == name:
-                    print(f"Policy: {policy} Policy Name:{name} Policy ID: {id}")
                     obj_id_list.append(id)
 
         for g in group_policy_obj_lst:
@@ -371,8 +368,6 @@ def link_obj_groups(api_key, org_id, linking_dict):
                         "objectIds": obj_id_list
                         }
 
-        print(f"** Payload: {payload_body}")
-        print(f"* Policy object group id : {policy_obj_group_id}")
         update_group_obj(api_key, org_id, policy_obj_group_id, payload_body)
 
 
