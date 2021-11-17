@@ -57,32 +57,36 @@ def list_group_obj(api_key, org_id):
 def delete_group_obj(api_key, org_id):
 
     json_policy_obj_groups = list_group_obj(api_key, org_id)
+    
+    if json_policy_obj_groups:   # list is not empty - some objects found in Dashboard
+        
+        delete_obj = input("Would you like to DELETE ALL group objects in Dashboard? This IRREVERSIBLE. Please enter y or n : ")
 
-    # Using for loop  to iterate over a list
-    for d in json_policy_obj_groups:
-        policy_obj_group_id = d['id']
-        policy_obj_group_name = d['name']
-        delete_obj = input(f"Would you like to DELETE {policy_obj_group_name}? Please enter y or n : ")
         if delete_obj == "y":
-            print(f"Deleting group object {policy_obj_group_name}")
-            url = f"{base_url}/organizations/{org_id}/policyObjects/groups/{policy_obj_group_id}"
-            try:
-                payload = {}
-                headers = {
-                            'X-Cisco-Meraki-API-Key': api_key,
-                            'Content-Type': 'application/json'
-                          }
+            # Using for loop  to iterate over a list
+            for d in json_policy_obj_groups:
+                policy_obj_group_id = d['id']
+                policy_obj_group_name = d['name']
+                print(f"Deleting group object {policy_obj_group_name}")
+                url = f"{base_url}/organizations/{org_id}/policyObjects/groups/{policy_obj_group_id}"
+                try:
+                    payload = {}
+                    headers = {
+                               'X-Cisco-Meraki-API-Key': api_key,
+                               'Content-Type': 'application/json'
+                              }
 
-                response = requests.delete(url, headers=headers, data=payload)
-                print(response.status_code)  # We want a Status code of 204
+                    response = requests.delete(url, headers=headers, data=payload)
+                    print(response.status_code)  # We want a Status code of 204
 
-            except HTTPError as http_err:
-                print(f"An HTTP error has occured {http_err}")
-            except Exception as err:
-                print(f"An error has occured {err}")
+                except HTTPError as http_err:
+                    print(f"An HTTP error has occured {http_err}")
+                except Exception as err:
+                    print(f"An error has occured {err}")
         else:
-            print(f"Policy Group Object {policy_obj_group_name} will NOT be removed.")
-
+            print("Policy Group Objects will NOT be removed.")
+    else:
+        print("There are no Policy Group Objects in Dashboard to delete.")
 
 def main():
     api_key, dashboard, org_id = collect_info()

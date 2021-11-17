@@ -59,31 +59,35 @@ def delete_network_obj(api_key, org_id):
 
     json_policy_obj = list_network_obj(api_key, org_id)
 
-    delete_obj = input("Would you like to DELETE ALL policy objects in Dashboard? This IRREVERSIBLE. Please enter y or n : ")
+    if json_policy_obj:   # list is not empty - some objects found in Dashboard
 
-    if delete_obj == "y":
-        # Using for loop  to iterate over a list
-        for d in json_policy_obj:
-            policy_obj_id = d['id']
-            policy_obj_name = d['name']
-            print(f"Deleting policy object {policy_obj_name}")
-            url = f"{base_url}/organizations/{org_id}/policyObjects/{policy_obj_id}"
-            try:
-                payload = {}
-                headers = {
+        delete_obj = input("Would you like to DELETE ALL policy objects in Dashboard? This IRREVERSIBLE. Please enter y or n : ")
+
+        if delete_obj == "y":
+            # Using for loop  to iterate over a list
+            for d in json_policy_obj:
+                policy_obj_id = d['id']
+                policy_obj_name = d['name']
+                print(f"Deleting policy object {policy_obj_name}")
+                url = f"{base_url}/organizations/{org_id}/policyObjects/{policy_obj_id}"
+                try:
+                    payload = {}
+                    headers = {
                             'X-Cisco-Meraki-API-Key': api_key,
                             'Content-Type': 'application/json'
                           }
 
-                response = requests.delete(url, headers=headers, data=payload)
-                print(response.status_code)  # We want a Status code of 204
+                    response = requests.delete(url, headers=headers, data=payload)
+                    print(response.status_code)  # We want a Status code of 204
 
-            except HTTPError as http_err:
-                print(f"An HTTP error has occured {http_err}")
-            except Exception as err:
-                print(f"An error has occured {err}")
+                except HTTPError as http_err:
+                    print(f"An HTTP error has occured {http_err}")
+                except Exception as err:
+                    print(f"An error has occured {err}")
         else:
-            print(f"Policy Object {policy_obj_name} will NOT be removed.")
+            print("Policy Objects will NOT be removed.")
+    else:
+        print("There are no Policy Objects in Dashboard to delete.")
 
 
 def main():
