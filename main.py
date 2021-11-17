@@ -66,7 +66,7 @@ def read_csv(csv_file, api_key, org_id):
                 else:
                     # Key exists check if object is in the list of values
                     if obj_name in linking_dict[obj_grp_name]:
-                        print(f"Object {obj_name} already exist in Group {obj_grp_name}")
+                        print(f"Object {obj_name} already exists in Group {obj_grp_name}")
                     else:
                         # Key exists add object not in list of values - add it
                         linking_dict[obj_grp_name].append(obj_name)
@@ -237,7 +237,7 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
     # Create Network Object for each item in obj_net_lst
 
     for network in obj_name_lst:
-        if existing_net_obj:   # list is not empty - some network objects found in Dashboard
+        if existing_net_obj:   # list is not empty - network objects found in Dashboard
             print("Existing Network Object list NOT empty")
 
             if network in extisting_net_obj_lst:
@@ -277,6 +277,7 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
 
 def list_network_obj(api_key, org_id):
     url = f"{base_url}/organizations/{org_id}/policyObjects/"
+    
     try:
         payload = {}
         headers = {
@@ -342,12 +343,12 @@ def link_obj_groups(api_key, org_id, linking_dict):
                                 "name": name,
                                 "id": id
                            }
-        group_policy_obj_lst.append(group_policy_obj_dict) # this contains group policy name and id
+        group_policy_obj_lst.append(group_policy_obj_dict) # contains group policy name and id
 
     # TESTING/VALIDATION linking dictionary
     for key, value in linking_dict.items():
         obj_id_list.clear()  # clear out list for next set
-        print(key, ' : ', value)
+        # print(key, ' : ', value)
         val_count = len(value)
         print(f"Number of policy objects for group {key}: {val_count}")
         # loop over value list
