@@ -59,12 +59,13 @@ def delete_network_obj(api_key, org_id):
 
     json_policy_obj = list_network_obj(api_key, org_id)
 
-    # Using for loop  to iterate over a list
-    for d in json_policy_obj:
-        policy_obj_id = d['id']
-        policy_obj_name = d['name']
-        delete_obj = input(f"Would you like to DELETE {policy_obj_name}? Please enter y or n : ")
-        if delete_obj == "y":
+    delete_obj = input("Would you like to DELETE ALL policy objects in Dashboard? This IRREVERSIBLE. Please enter y or n : ")
+
+    if delete_obj == "y":
+        # Using for loop  to iterate over a list
+        for d in json_policy_obj:
+            policy_obj_id = d['id']
+            policy_obj_name = d['name']
             print(f"Deleting policy object {policy_obj_name}")
             url = f"{base_url}/organizations/{org_id}/policyObjects/{policy_obj_id}"
             try:
