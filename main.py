@@ -19,7 +19,7 @@ network_obj_lst = []
 obj_id_list = []
 group_policy_obj_lst = []
 base_url = "https://api.meraki.com/api/v1"
-csv_file = "Meraki_Import_test.csv"
+csv_file = "Meraki_Import Full.csv"
 
 
 def collect_info():
@@ -134,6 +134,7 @@ def check_group_obj(api_key, obj_group_lst, org_id):
 
     # Search list of dictionaries to see if group object name exists
     # Create Object Group for each item in obj_group_lst
+    count = 0
     for group in obj_group_lst:
         if existing_group_obj:   # list is not empty - some group objects found in Dashboard
             print("Existing Group Object list NOT empty")
@@ -144,12 +145,17 @@ def check_group_obj(api_key, obj_group_lst, org_id):
                 print("Need to create group object")
                 # Call Function to make API Call
                 create_group_post(api_key, org_id, group)
+                count += 1
+                print(f"Group Object Policy: {count}")
 
         else:   # list is empty - no network objects found in Dashboard
             print("Existing Group Object list EMPTY - create group object(s)")
 
-                # Call Function to make API Call
+            # Call Function to make API Call
             create_group_post(api_key, org_id, group)
+            count += 1
+            print(f"Group Object Policy: {count}")
+
     return
 
 
@@ -235,7 +241,7 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
 
     # Search list of dictionaries to see if network object name exists
     # Create Network Object for each item in obj_net_lst
-
+    count = 0
     for network in obj_name_lst:
         if existing_net_obj:   # list is not empty - network objects found in Dashboard
             print("Existing Network Object list NOT empty")
@@ -248,7 +254,6 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
                 # if network in obj_dict_list
                 for d in obj_dict_lst:   # choose item in obj_dict_lst
                     if network == d['name']:
-                        print("Network equal dName")
                         payload_body = {
                                             "name": d['name'],
                                             "category": d['category'],
@@ -257,11 +262,11 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
                                             "groupIds": []
                                            }
                         create_net_obj_post(api_key, org_id, payload_body)
-
+                        count += 1
+                        print(f"Object Policy: {count}")
         else:   # list is empty - no network objects found in Dashboard
             for d in obj_dict_lst:
                 if network == d['name']:
-                    # print(f"this is d: {d}")
                     payload_body = {
                                     "name": d['name'],
                                     "category": d['category'],
@@ -269,15 +274,16 @@ def check_net_obj(api_key, obj_name_lst, obj_dict_lst, org_id):
                                     "cidr": d['cidr'],
                                     "groupIds": []
                                    }
-                
-                    create_net_obj_post(api_key, org_id, payload_body)
 
+                    create_net_obj_post(api_key, org_id, payload_body)
+                    count += 1
+                    print(f"Object Polciy: {count}")
     return
 
 
 def list_network_obj(api_key, org_id):
     url = f"{base_url}/organizations/{org_id}/policyObjects/"
-    
+
     try:
         payload = {}
         headers = {
