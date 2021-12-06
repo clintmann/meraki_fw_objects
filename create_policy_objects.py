@@ -1,3 +1,23 @@
+#
+# This script is for demonstation purposes only. It was not written for a
+# production environment.
+#
+# The script uses Meraki Policy Object APIs to create and modify Network Objects/Groups.
+#
+# The script will import information from a .csv file
+# that contains the following 5 columns:
+#
+# name	category	type	cidr	groupName
+#
+# Note:
+# Object groups can not contain more than 150 policy objects.
+# If the number of policy objects for group exceeds the 150 count limit,
+# create an additional group(s) for excess policies.
+#
+# There is a sample template called object-import.csv
+#
+# This script is used before create_l3_fw_rules.py
+
 
 import requests
 from requests.models import HTTPError
@@ -5,24 +25,14 @@ import getpass
 import csv
 import json
 import copy
+import time
 
 
-object_names_lst = []
-object_groups_lst = []
-object_dict = {}
-object_dict_lst = []
-linking_dict = {}
-linking_dict_lst = []
-existing_group_obj_name_lst = []
-existing_net_obj_lst = []
-network_obj_lst = []
-group_policy_obj_lst = []
 base_url = 'https://api.meraki.com/api/v1'
-csv_file = 'Meraki-Policy_Objects-All.csv'
+csv_file = 'object-import.csv'
 
 
-# List the organizations that the user has privileges on
-# https://api.meraki.com/api_docs#list-the-organizations-that-the-user-has-privileges-on
+# List the organizations that the user has access to
 def get_user_orgs(api_key):
     get_url = f'{base_url}/organizations'
     headers = {'X-Cisco-Meraki-API-Key': api_key,
@@ -38,7 +48,12 @@ def get_user_orgs(api_key):
 def collect_info():
     # Ask for user's API key
     while True:
-        api_key = getpass.getpass('Please enter your Meraki API key: ')
+        print('********************DEMO********************')
+        print('This script is for demo purposes only.\n')
+        print('It will use Meraki APIs to create and modify')
+        print('Network Objects/Groups\n')
+        print('********************DEMO********************\n')
+        api_key = getpass.getpass('If you would like to continue, please enter your Meraki API key: ')
         (ok, orgs) = get_user_orgs(api_key)
         if ok:
             break
@@ -47,6 +62,7 @@ def collect_info():
     # Get organization ID and name
     org_ids = []
     org_names = []
+    print()
     print('You have access to these organizations with that API key.')
     for org in orgs:
         org_id = org['id']
@@ -71,7 +87,10 @@ def collect_info():
 
 # Function to read csv file
 def read_csv(csv_file, api_key, org_id):
-
+    object_names_lst = []
+    object_groups_lst = []
+    object_dict_lst = []
+    linking_dict = {}
     try:
         with open(csv_file, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -84,7 +103,7 @@ def read_csv(csv_file, api_key, org_id):
                 category = row['category']
                 type = row['type']
                 cidr = row['cidr']
-                group_name = row['Group Name']
+                group_name = row['groupName']
 
                 # Create a 'linking' dictionary
                 # This contains the policy object name and policy object group
@@ -146,8 +165,9 @@ def read_csv(csv_file, api_key, org_id):
     return
 
 
+# Function to check and add group policy objects to Dashboard
 def check_group_obj(api_key, obj_group_lst, org_id):
-
+    existing_group_obj_name_lst = []
     # Check if the group object already exists using List Group function
     existing_group_obj = list_group_obj(api_key, org_id)  # this will return a list of dictionaries
 
@@ -166,7 +186,6 @@ def check_group_obj(api_key, obj_group_lst, org_id):
     batch = 0
     for group in obj_group_lst:  # this is the list of policy group objects we want to create
         if existing_group_obj:   # list is not empty - some group objects found in Dashboard
-            #print('Existing Group Object list NOT empty')
             # Create Object Group for each item in obj_group_lst
             if group in existing_group_obj_name_lst:   # this is the list of policy group object names in Dashboard
                 print(f'Group {group} is already configured in Dashboard.')
@@ -203,30 +222,7 @@ def check_group_obj(api_key, obj_group_lst, org_id):
     return
 
 
-def create_group_post(api_key, org_id, group):
-    url = f'{base_url}/organizations/{org_id}/policyObjects/groups'
-
-    try:
-        payload = json.dumps({
-            'name': group,
-            'objectIds': []
-        })
-        headers = {
-            'X-Cisco-Meraki-API-Key': api_key,
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.post(url, headers=headers, data=payload)
-        print(f'Create Group response code {response.status_code}')  # We want a Status code of 201
-
-    except HTTPError as http_err:
-        print(f'An HTTP error has occured {http_err}')
-    except Exception as err:
-        print(f'An error has occured {err}')
-
-    return
-
-
+# Function to list group policy objects in Dashboard
 def list_group_obj(api_key, org_id):
     url = f'{base_url}/organizations/{org_id}/policyObjects/groups'
 
@@ -251,28 +247,9 @@ def list_group_obj(api_key, org_id):
     return
 
 
-def update_group_obj(api_key, org_id, policy_obj_group_id, payload_body):
-    url = f'{base_url}/organizations/{org_id}/policyObjects/groups/{policy_obj_group_id}'
-
-    try:
-        payload = json.dumps(payload_body)
-        headers = {
-                    'X-Cisco-Meraki-API-Key': api_key,
-                    'Content-Type': 'application/json'
-                  }
-
-        response = requests.put(url, headers=headers, data=payload)
-        print(f'Update Group response code: {response.status_code}')  # We want a Status code of 201
-
-    except HTTPError as http_err:
-        print(f'An HTTP error has occured {http_err}')
-    except Exception as err:
-        print(f'An error has occured {err}')
-
-    return
-
-
+# Function to check and add policy objects to Dashboard
 def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
+    existing_net_obj_lst = []
 
     # Check if the group object already exists using List Network Object function
     existing_net_obj = list_network_obj(api_key, org_id)  # this will return a list of dictionaries
@@ -280,7 +257,7 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
     # Create list of existing object names from the list of dictionaries
     for i in existing_net_obj:
         name = i['name']
-        # if name not in existing_net_obj:
+        # if name not in existing_net_obj
         # append to list
         existing_net_obj_lst.append(name)
 
@@ -317,7 +294,6 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
                         }
                         actions_lst.append(action_payload)
                         count += 1
-                        print(f'Count = {count}')
         else:   # list is empty - no network objects found in Dashboard
             for d in obj_dict_lst:
                 if network == d['name']:
@@ -344,6 +320,7 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
     return
 
 
+# Function to execute action batch
 def batch_objects(base_url, api_key, org_id, actions):
     url = f'{base_url}/organizations/{org_id}/actionBatches'
 
@@ -369,6 +346,7 @@ def batch_objects(base_url, api_key, org_id, actions):
     return
 
 
+# Function to list policy objects in Dashboard
 def list_network_obj(api_key, org_id):
     url = f'{base_url}/organizations/{org_id}/policyObjects/'
 
@@ -393,30 +371,13 @@ def list_network_obj(api_key, org_id):
     return
 
 
-def create_net_obj_post(api_key, org_id, payload_body):
-    url = f'{base_url}/organizations/{org_id}/policyObjects/'
-
-    try:
-        payload = json.dumps(payload_body)
-        headers = {
-            'X-Cisco-Meraki-API-Key': api_key,
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.post(url, headers=headers, data=payload)
-        print(f'Create Network Object response code {response.status_code}')  # We want a Status code of 201
-
-    except HTTPError as http_err:
-        print(f'An HTTP error has occured {http_err}')
-    except Exception as err:
-        print(f'An error has occured {err}')
-
-    return
-
-
+# Function to link policy objects to group objects in Dashboard
 def link_objects_to_groups(api_key, org_id, linking_dict):
+    network_obj_lst = []
+    group_policy_obj_lst = []
     policy_obj_group_id = ''
-    network_objects = list_network_obj(api_key, org_id)  # this will return a list 
+
+    network_objects = list_network_obj(api_key, org_id)  # this will return a list
 
     # Create list of existing object names from the list of dictionaries
     for net_object in network_objects:
@@ -482,6 +443,7 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
 
     for i in range(0, len(actions_lst), 100):  # send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
+        time.sleep(1)
         batch_objects(base_url, api_key, org_id, actions)
         batch += 1
 
