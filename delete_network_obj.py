@@ -7,12 +7,13 @@ import requests
 from requests.models import HTTPError
 import getpass
 import json
+import time
 
 
 base_url = "https://api.meraki.com/api/v1"
 
 
-# List the organizations that the user has privileges on
+# List the organizations that the user has access to
 def get_user_orgs(api_key):
     get_url = f'{base_url}/organizations'
     headers = {'X-Cisco-Meraki-API-Key': api_key,
@@ -30,7 +31,7 @@ def collect_info():
     print('This script is for demo purposes only.\n')
     print('It will use Meraki APIs to DELETE Network Objects\n')
     print('********************DEMO********************\n')
-    print('*********** DELETE POLICY OBJECTS **********\n')
+    print('*********** DELETE NETWORK OBJECTS *********\n')
 
     # Ask for user's API key
     while True:
@@ -120,7 +121,7 @@ def delete_network_obj(api_key, org_id):
 
     for i in range(0, len(actions_lst), 100):  # Send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
-
+        time.sleep(1)
         batch_objects(base_url, api_key, org_id, actions)
         batch += 1
 
