@@ -1,6 +1,6 @@
 #
 # This script is for demonstation purposes only.
-# It uses Meraki Policy Object APIs to apply Network Objects/Groups
+# It uses Meraki APIs to apply Network Objects/Groups
 # to layer 3 firewall rules.
 #
 # This script is used after create_policy_objects.py
