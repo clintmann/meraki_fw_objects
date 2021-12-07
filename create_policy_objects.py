@@ -95,9 +95,8 @@ def read_csv(csv_file, api_key, org_id):
         with open(csv_file, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile)
             # The data from four columns in the file will be used
-            # The columns are name, category, type, cidr and Group Name
-            # Read in data from the relevant columns in the row
-            # and assign it to a variable
+            # The columns are name, category, type, cidr and groupName
+            # Read in data from the relevant columns in the row and assign it to a variable
             for row in reader:
                 name = row['name']
                 category = row['category']
@@ -106,8 +105,7 @@ def read_csv(csv_file, api_key, org_id):
                 group_name = row['groupName']
 
                 # Create a 'linking' dictionary
-                # This contains the policy object name and policy object group
-                # that it belongs too
+                # This contains the policy object name and policy object group that it belongs too
                 if group_name:  # If group name is not empty
                     # If there is no key with the Object Group Name create one
                     if group_name not in linking_dict:
@@ -146,7 +144,7 @@ def read_csv(csv_file, api_key, org_id):
                         'cidr': cidr,
                         'groupIds': []
                     }
-                    object_dict_lst.append(policy_object)  # this will be a list of dictionaries
+                    object_dict_lst.append(policy_object)  # This will be a list of dictionaries
 
             print(f'UNIQUE OBJECT GROUPS: {len(object_groups_lst)}')
             print(f'UNIQUE OBJECT NAMES: {len(object_names_lst)}')
@@ -169,11 +167,11 @@ def read_csv(csv_file, api_key, org_id):
 def check_group_obj(api_key, obj_group_lst, org_id):
     existing_group_obj_name_lst = []
     # Check if the group object already exists using List Group function
-    existing_group_obj = list_group_obj(api_key, org_id)  # this will return a list of dictionaries
+    existing_group_obj = list_group_obj(api_key, org_id)  # This will return a list of dictionaries
 
     # Create list of existing object names from the list of dictionaries
-    if existing_group_obj:   # list is not empty - some group objects found in Dashboard
-        for item in existing_group_obj:   # create a list of existing group object names
+    if existing_group_obj:   # List is not empty - some group objects found in Dashboard
+        for item in existing_group_obj:   # Create a list of existing group object names
             name = item['name']
             # Append to list
             existing_group_obj_name_lst.append(name)
@@ -184,10 +182,10 @@ def check_group_obj(api_key, obj_group_lst, org_id):
     actions_lst = []
     count = 0
     batch = 0
-    for group in obj_group_lst:  # this is the list of policy group objects we want to create
-        if existing_group_obj:   # list is not empty - some group objects found in Dashboard
+    for group in obj_group_lst:  # This is the list of policy group objects we want to create
+        if existing_group_obj:   # Tist is not empty - some group objects found in Dashboard
             # Create Object Group for each item in obj_group_lst
-            if group in existing_group_obj_name_lst:   # this is the list of policy group object names in Dashboard
+            if group in existing_group_obj_name_lst:   # This is the list of policy group object names in Dashboard
                 print(f'Group {group} is already configured in Dashboard.')
             else:
                 print(f'Need to create group object {group}')
@@ -202,7 +200,7 @@ def check_group_obj(api_key, obj_group_lst, org_id):
                 actions_lst.append(action_payload)
                 count += 1
 
-        else:   # list is empty - no network objects found in Dashboard
+        else:   # List is empty - no network objects found in Dashboard
             action_payload = {
                 'resource': f'/organizations/{org_id}/policyObjects/groups',
                 'operation': 'create',
@@ -212,7 +210,7 @@ def check_group_obj(api_key, obj_group_lst, org_id):
             }
             actions_lst.append(action_payload)
             count += 1
-    for i in range(0, len(actions_lst), 100):  # send 100 at a time to action batch function
+    for i in range(0, len(actions_lst), 100):  # Send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
         batch_objects(base_url, api_key, org_id, actions)
         batch += 1
@@ -268,16 +266,15 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
     count = 0
     batch = 0
 
-    for network in obj_names_lst:  # this is the list of policy objects we want to create
-        if existing_net_obj:   # list is not empty - network objects found in Dashboard
+    for network in obj_names_lst:  # This is the list of policy objects we want to create
+        if existing_net_obj:   # List is not empty - network objects found in Dashboard
             print('Existing Network Object list NOT empty')
 
-            if network in existing_net_obj_lst:  # this is the list of policy objects in Dashboard
+            if network in existing_net_obj_lst:  # This is the list of policy objects in Dashboard
                 print(f'Network {network} is already configured in Dashboard.')
             else:
                 print(f'Need to create network object {network}')
-                # Call Function to make API Call
-                # if network in obj_dict_list
+                # Call Function to make API Call if network in obj_dict_list
                 for d in obj_dict_lst:   # choose item in obj_dict_lst
                     if network == d['name']:
                         nme = d['name']
@@ -294,7 +291,7 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
                         }
                         actions_lst.append(action_payload)
                         count += 1
-        else:   # list is empty - no network objects found in Dashboard
+        else:   # List is empty - no network objects found in Dashboard
             for d in obj_dict_lst:
                 if network == d['name']:
                     action_payload = {
@@ -310,7 +307,7 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
                     actions_lst.append(action_payload)
                     count += 1
 
-    for i in range(0, len(actions_lst), 100):  # send 100 at a time to action batch function
+    for i in range(0, len(actions_lst), 100):  # Send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
         batch_objects(base_url, api_key, org_id, actions)
         batch += 1
@@ -377,7 +374,7 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
     group_policy_obj_lst = []
     policy_obj_group_id = ''
 
-    network_objects = list_network_obj(api_key, org_id)  # this will return a list
+    network_objects = list_network_obj(api_key, org_id)  # This will return a list
 
     # Create list of existing object names from the list of dictionaries
     for net_object in network_objects:
@@ -399,17 +396,17 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
             'name': name,
             'id': id
         }
-        group_policy_obj_lst.append(group_policy_object)  # contains group policy name and id
+        group_policy_obj_lst.append(group_policy_object)  # Contains group policy name and id
 
     actions_lst = []
     obj_id_list = []
     count = 0
     batch = 0
 
-    for group_object_name, networks in linking_dict.items():  # for group(key), networks(value) in linking dict
-        obj_id_list.clear()  # clear out list for next set
+    for group_object_name, networks in linking_dict.items():  # For group(key), networks(value) in linking dict
+        obj_id_list.clear()  # Clear out list for next set
         val_count = len(networks)
-        # loop over networks list
+        # Loop over networks list
         if val_count > 150:
             print(f'Number of policy objects for group {group_object_name} exceeds 150 Value Count is {val_count}')
             print(f'Please create additional group(s) for {group_object_name} for policies that exceed the 150 count limit.')
@@ -436,12 +433,12 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
                     'objectIds': obj_id_list
                     }
                 }
-            # a deep copy creates a *new object* and adds *copies* of nested objects in the original
+            # A deep copy creates a *new object* and adds *copies* of nested objects in the original
             action_payload_copy = copy.deepcopy(action_payload)
             actions_lst.append(action_payload_copy)
             count += 1
 
-    for i in range(0, len(actions_lst), 100):  # send 100 at a time to action batch function
+    for i in range(0, len(actions_lst), 100):  # Send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
         time.sleep(1)
         batch_objects(base_url, api_key, org_id, actions)
