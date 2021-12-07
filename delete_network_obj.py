@@ -11,8 +11,8 @@ import json
 
 base_url = "https://api.meraki.com/api/v1"
 
+
 # List the organizations that the user has privileges on
-# https://api.meraki.com/api_docs#list-the-organizations-that-the-user-has-privileges-on
 def get_user_orgs(api_key):
     get_url = f'{base_url}/organizations'
     headers = {'X-Cisco-Meraki-API-Key': api_key,
