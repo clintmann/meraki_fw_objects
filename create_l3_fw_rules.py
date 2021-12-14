@@ -9,6 +9,7 @@
 # There is an sample template called fw-rules.csv
 #
 
+import os.path
 import requests
 from requests.models import HTTPError
 import getpass
@@ -18,7 +19,6 @@ import copy
 
 
 base_url = 'https://api.meraki.com/api/v1'
-csv_file = 'fw-rules.csv'
 
 
 # List the organizations that the user has access to
@@ -47,28 +47,40 @@ def get_networks(api_key, org_id):
 # Function to prompt user for API key and Org ID
 def collect_info():
     # Ask for user's API key
+    print('********************DEMO********************')
+    print('This script is for demo purposes only.\n')
+    print('It will use Meraki APIs to apply')
+    print('Network Objects/Groups to layer 3 firewall rules\n')
+    print('********************DEMO********************\n')
+
     while True:
-        print('********************DEMO********************')
-        print('This script is for demo purposes only.\n')
-        print('It will use Meraki APIs to apply')
-        print('Network Objects/Groups to layer 3 firewall rules\n')
-        print('********************DEMO********************\n')
+        csv_file = input("Please enter the name of the .csv file containing the firewall rules: ")
+        print()
+        file_exists = os.path.exists(csv_file)
+        if file_exists:
+            break
+        else:
+            print('The file you entered does not exist.\n')
+
+    while True:
         api_key = getpass.getpass('If you would like to continue, please enter your Meraki API key: ')
         (ok, orgs) = get_user_orgs(api_key)
         if ok:
             break
         else:
-            print('There was a problem with the API key you entered.')
+            print('There was a problem with the API key you entered.\n')
+
     # Get organization ID and name
     org_ids = []
     org_names = []
     print('You have access to these organizations with that API key.')
+    print('Organization ID\t\tOrganization Name'.expandtabs(8))
     for org in orgs:
         org_id = org['id']
         org_name = org['name']
         org_ids.append(str(org_id))
         org_names.append(org_name)
-        print('Organization ID\t\tOrganization Name'.expandtabs(8))
+
         print(f'{org_id:20}\t{org_name}')
     print()
 
@@ -78,7 +90,7 @@ def collect_info():
         if org_id in org_ids:
             break
         else:
-            print('That org ID is not one listed, try another.')
+            print('That org ID is not one listed, try another.\n')
     print()
 
     while True:
@@ -86,7 +98,7 @@ def collect_info():
         if ok:
             break
         else:
-            print('There was a problem retrieving the networks.')
+            print('There was a problem retrieving the networks.\n')
 
     net_ids = []
     net_names = []
@@ -112,9 +124,9 @@ def collect_info():
             print()
             break
         else:
-            print('That Network Name is not one listed, try another.')
+            print('That Network Name is not one listed, try another.\n')
 
-    return api_key, org_id, net_id
+    return csv_file, api_key, org_id, net_id
 
 
 def list_group_obj(api_key, org_id):
@@ -204,7 +216,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     dest_cidr = row['Destination CIDR']
                     dest_port = row['Destination Port']
                     syslog = row['Syslog Enabled']
-
                     if rule_number:  # Rule number field not empty
                         if rule_number == 'END':
                             break
@@ -236,19 +247,19 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                 else:  # Row empty
                     # Determine if destinatino is a group or network object
                     for dest in dest_cidr_lst:
+                        if dest == 'Any':
+                            dest_cidr_group_id_lst.append(dest)
+                            break
                         # Is dest a group?
                         for grp_object in group_obj_lst:
-                            if dest == 'Any':
-                                dest_cidr_group_id_lst.append(dest)
-                                break
-                            elif dest in grp_object.values():
+                            if dest in grp_object.values():
                                 name = grp_object['name']
                                 id = grp_object['id']
-                                print(f'NAME: {name} {id}')
+                                print(f'DEST NAME: {name} {id}')
                                 dest_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
                                 break
-
                     list_len = len(dest_cidr_group_id_lst)
+
                     if list_len > 0:
                         exist_as_group_object = True
                     else:
@@ -257,27 +268,35 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     if exist_as_group_object is False:  # Destination is not a group check network objects to find it
                         for dest in dest_cidr_lst:
                             # Check if the dest ends in /32 if so, remove the /32
-                            if dest.endswith('/32'):
+                            if dest.endswith('/32'):  # item is an IP address
                                 dest = dest.replace('/32', '')
-                            for net_object in network_obj_lst:
-                                if dest in net_object.values():
-                                    net_cidr = net_object['cidr']
-                                    id = net_object['id']
-                                    print(f'NAME: {net_cidr} {id}')
-                                    dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                    break
-
+                                for net_object in network_obj_lst:
+                                    if dest in net_object.values():
+                                        net_cidr = net_object['cidr']
+                                        id = net_object['id']
+                                        print(f'NAME: {net_cidr} {id}')
+                                        dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                        break
+                            else:  # item is a policy object name
+                                for net_object in network_obj_lst:
+                                    if dest in net_object.values():
+                                        net_name = net_object['name']
+                                        id = net_object['id']
+                                        print(f'NAME: {net_name} {id}')
+                                        dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                        break
                     # Determine if source is a group or network object
                     for src in src_cidr_lst:
                         # Is source a group?
+                        if src == 'Any':
+                            src_cidr_group_id_lst.append(src)
+                            break
+
                         for grp_object in group_obj_lst:
-                            if src == 'Any':
-                                src_cidr_group_id_lst.append(src)
-                                break
-                            elif src in grp_object.values():
+                            if src in grp_object.values():
                                 name = grp_object['name']
                                 id = grp_object['id']
-                                print(f'NAME: {name} {id}')
+                                print(f'Source NAME: {name} {id}')
                                 src_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
                                 break
                     # Check if there are items in the group list by checking length
@@ -290,18 +309,25 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     if exist_as_group_object is False:  # Destination is not a group check network objects to find it
                         for src in src_cidr_lst:
                             # Check if the the source ends in /32 remove the /32
-                            if src.endswith('/32'):
+                            if src.endswith('/32'):  # item is an IP address
                                 src = src.replace('/32', '')
-
-                            print(f'Checking network source {src}')
-                            for net_object in network_obj_lst:
-                                if src in net_object.values():
-                                    net_cidr = net_object['cidr']
-                                    id = net_object['id']
-                                    print(f'NAME: {src} {net_cidr} {id}')
-                                    #id_copy = copy.deepcopy(id)
-                                    src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                    break
+                                print(f'Checking network source {src}')
+                                for net_object in network_obj_lst:
+                                    if src in net_object.values():
+                                        net_cidr = net_object['cidr']
+                                        id = net_object['id']
+                                        print(f'NAME: {src} {net_cidr} {id}')
+                                        src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                        break
+                            else:  # item is a policy object name
+                                print(f'Checking network source {src}')
+                                for net_object in network_obj_lst:
+                                    if src in net_object.values():
+                                        net_name = net_object['name']
+                                        id = net_object['id']
+                                        print(f'NAME: {src} {net_name} {id}')
+                                        src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                        break
 
                     # Change dest port from list to sting
                     dest_ports = ','.join(dest_port_lst)
@@ -311,9 +337,13 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     # Create rule payload there could be objects from group list 
                     # and network list as src and destCidr
 
+                    src_cidr_string = ''
+                    dest_cidr_string = ''
+
                     # Join all the ids in the destination group id list and network id list
                     if len(dest_cidr_group_id_lst) > 0:
                         dest_cidr_string = ','.join(dest_cidr_group_id_lst)
+                        print(dest_cidr_string)
                     if len(dest_cidr_network_id_lst) > 0:
                         dest_cidr_string = ','.join(dest_cidr_network_id_lst)
                     # Join all the ids in the source group id list and network id list
@@ -342,6 +372,7 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     rule_comment = ''
                     rule_protocol = ''
                     rule_syslog = ''
+
                     src_cidr_lst.clear()
                     src_port_lst.clear()
                     dest_cidr_lst.clear()
@@ -394,9 +425,11 @@ def create_fw_rules(api_key, base_url, net_id, fw_rule_payload):
 def main():
     group_obj_lst = []
     network_obj_lst = []
-    api_key, org_id, net_id = collect_info()
+    csv_file, api_key, org_id, net_id = collect_info()
     group_obj_lst = list_group_obj(api_key, org_id)
     network_obj_lst = list_network_obj(api_key, org_id)
+    #print(group_obj_lst)
+    #print(type(group_obj_lst))
     read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst)
 
 

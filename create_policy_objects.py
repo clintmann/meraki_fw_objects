@@ -19,6 +19,7 @@
 # This script is used before create_l3_fw_rules.py
 
 
+import os
 import requests
 from requests.models import HTTPError
 import getpass
@@ -29,7 +30,7 @@ import time
 
 
 base_url = 'https://api.meraki.com/api/v1'
-csv_file = 'object-import.csv'
+#csv_file = 'object-import.csv'
 
 
 # List the organizations that the user has access to
@@ -47,18 +48,30 @@ def get_user_orgs(api_key):
 # Function to prompt user for API key and Org ID
 def collect_info():
     # Ask for user's API key
+
+    print('********************DEMO********************')
+    print('This script is for demo purposes only.\n')
+    print('It will use Meraki APIs to create and modify')
+    print('Network Objects/Groups\n')
+    print('********************DEMO********************\n')
+
     while True:
-        print('********************DEMO********************')
-        print('This script is for demo purposes only.\n')
-        print('It will use Meraki APIs to create and modify')
-        print('Network Objects/Groups\n')
-        print('********************DEMO********************\n')
+        csv_file = input("Please enter the name of the .csv file containing the Group and Policy object: ")
+        print()
+        file_exists = os.path.exists(csv_file)
+        if file_exists:
+            break
+        else:
+            print('The file you entered does not exist.\n')
+
+    while True:
         api_key = getpass.getpass('If you would like to continue, please enter your Meraki API key: ')
         (ok, orgs) = get_user_orgs(api_key)
         if ok:
             break
         else:
-            print('There was a problem with the API key you entered.')
+            print('There was a problem with the API key you entered.\n')
+
     # Get organization ID and name
     org_ids = []
     org_names = []
@@ -79,10 +92,10 @@ def collect_info():
         if org_id in org_ids:
             break
         else:
-            print('That org ID is not one listed, try another.')
+            print('That org ID is not one listed, try another.\n')
     print()
 
-    return api_key, org_id
+    return csv_file, api_key, org_id
 
 
 # Function to read csv file
@@ -103,7 +116,9 @@ def read_csv(csv_file, api_key, org_id):
                 type = row['type']
                 cidr = row['cidr']
                 group_name = row['groupName']
-
+                
+                if not name:
+                    break
                 # Create a 'linking' dictionary
                 # This contains the policy object name and policy object group that it belongs too
                 if group_name:  # If group name is not empty
@@ -268,7 +283,7 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
 
     for network in obj_names_lst:  # This is the list of policy objects we want to create
         if existing_net_obj:   # List is not empty - network objects found in Dashboard
-            print('Existing Network Object list NOT empty')
+            #print('Existing Network Object list NOT empty')
 
             if network in existing_net_obj_lst:  # This is the list of policy objects in Dashboard
                 print(f'Network {network} is already configured in Dashboard.')
@@ -334,6 +349,8 @@ def batch_objects(base_url, api_key, org_id, actions):
 
         response = requests.post(url, headers=headers, data=payload)
         print(f'Action Batch response status : {response.reason}')
+        if response.reason == 'Bad Request':
+            print(payload)
         print(f'Action Batch response code: {response.status_code}')  # We want a Status code of 201
 
     except HTTPError as http_err:
@@ -440,7 +457,7 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
 
     for i in range(0, len(actions_lst), 100):  # Send 100 at a time to action batch function
         actions = actions_lst[i:i+100]
-        time.sleep(1)
+        time.sleep(2)
         batch_objects(base_url, api_key, org_id, actions)
         batch += 1
 
@@ -449,7 +466,7 @@ def link_objects_to_groups(api_key, org_id, linking_dict):
 
 
 def main():
-    api_key, org_id = collect_info()
+    csv_file, api_key, org_id = collect_info()
     read_csv(csv_file, api_key, org_id)
 
 
