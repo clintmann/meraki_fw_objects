@@ -202,10 +202,11 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
             # and assign it to a variable
             rule = 0
             # Read in row
+            print("Processing data. This may take a minute or two. Please be patient....")
             for row in reader:
                 row_values = list(row.values())
                 # Check if row is empty
-                result = all(element == row_values[0] for element in row_values) # Will be True if all values are the same
+                result = all(element == row_values[0] for element in row_values)  # Will be True if all values are the same "empty" or blank
                 if not result:  # Row is not empty
                     rule_number = row['Rule Number']
                     policy = row['Policy']
@@ -220,7 +221,7 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                         if rule_number == 'END':
                             break
                         elif int(rule_number) > rule:
-                            rule_policy = policy.strip() # Strip away white spaces
+                            rule_policy = policy.strip()  # Strip away white spaces
                             rule_comment = comment
                             rule_protocol = protocol.strip()
                             rule_syslog = syslog
@@ -234,6 +235,7 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                             if dest_port:
                                 dest_port_lst.append(dest_port.strip())
                             rule = int(rule_number)
+
                     else:   # Rule number field is empty - same rule more info
                         if src_cidr:
                             src_cidr_lst.append(src_cidr.strip())
@@ -244,113 +246,179 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                         if dest_port:
                             dest_port_lst.append(dest_port.strip())
 
-                else:  # Row empty
-                    # Determine if destinatino is a group or network object
+                else:  # Row is entirely empty
+                    dest_not_empty = bool(dest_cidr_lst)  # False means empty
+                    if dest_not_empty is False:
+                        break
+                    src_not_empty = bool(src_cidr_lst)    # False means empty
+                    if src_not_empty is False:
+                        break
+
+                    # CHECK DESTINATION CIDR
+                    # Determine if destination is a group or network object
                     for dest in dest_cidr_lst:
+                        # Is dest any?
                         if dest == 'Any':
                             dest_cidr_group_id_lst.append(dest)
                             break
                         # Is dest a group?
                         for grp_object in group_obj_lst:
                             if dest in grp_object.values():
-                                name = grp_object['name']
+                                #name = grp_object['name']
                                 id = grp_object['id']
-                                print(f'DEST NAME: {name} {id}')
-                                dest_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
-                                break
-                    list_len = len(dest_cidr_group_id_lst)
-
-                    if list_len > 0:
-                        exist_as_group_object = True
-                    else:
-                        exist_as_group_object = False
-
-                    if exist_as_group_object is False:  # Destination is not a group check network objects to find it
-                        for dest in dest_cidr_lst:
+                                dest_group_object = f'GRP({id})'
+                                if dest_group_object not in dest_cidr_group_id_lst:
+                                    dest_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
+                                    break
                             # Check if the dest ends in /32 if so, remove the /32
-                            if dest.endswith('/32'):  # item is an IP address
+                            if dest.endswith('/32'):  # dest is an IP address
                                 dest = dest.replace('/32', '')
                                 for net_object in network_obj_lst:
                                     if dest in net_object.values():
-                                        net_cidr = net_object['cidr']
+                                        #net_cidr = net_object['cidr']
                                         id = net_object['id']
-                                        print(f'NAME: {net_cidr} {id}')
-                                        dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                        break
-                            else:  # item is a policy object name
+                                        dest_obj_32 = f'OBJ({id})'
+                                        if dest_obj_32 not in dest_cidr_network_id_lst:
+                                            dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                            break
+                            else:   # dest is a policy object name or doesn't exist
                                 for net_object in network_obj_lst:
                                     if dest in net_object.values():
-                                        net_name = net_object['name']
+                                        #net_name = net_object['name']
                                         id = net_object['id']
-                                        print(f'NAME: {net_name} {id}')
-                                        dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                        break
+                                        dest_obj = f'OBJ({id})'
+                                        if dest_obj not in dest_cidr_network_id_lst:
+                                            dest_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                            break
+
+                    # Determine if destination was a group by checking length of list
+                    list_len = len(dest_cidr_group_id_lst)
+                    if list_len > 0:
+                        dest_exist_as_group_object = True
+                    else:
+                        dest_exist_as_group_object = False
+
+                    # Determine if destination was a network object by checking length of list
+                    list_len = len(dest_cidr_network_id_lst)
+                    if list_len > 0:
+                        dest_exist_as_network_object = True
+                    else:
+                        dest_exist_as_network_object = False
+
+                    # Check to see if the destination was found as a group or object 
+                    # If not a group or network object alert and EXIT !
+                    if dest_exist_as_group_object is False:
+                        if dest_exist_as_network_object is False:
+                            print(f"\nCould not find destination CIDR: {dest} \n")
+                            print("Please check spelling as well as the Group and Network objects to fix issue.\n")
+                            print("Exiting script...")
+                            quit()
+
+                    # CHECK SOURCE CIDR
                     # Determine if source is a group or network object
                     for src in src_cidr_lst:
-                        # Is source a group?
+                        # Is source any?
                         if src == 'Any':
                             src_cidr_group_id_lst.append(src)
                             break
-
+                        # Is source a group?
                         for grp_object in group_obj_lst:
                             if src in grp_object.values():
-                                name = grp_object['name']
+                                #name = grp_object['name']
                                 id = grp_object['id']
-                                print(f'Source NAME: {name} {id}')
-                                src_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
-                                break
-                    # Check if there are items in the group list by checking length
+                                src_group_object = f'GRP({id})'
+                                if src_group_object not in src_cidr_group_id_lst:
+                                    src_cidr_group_id_lst.append(f'GRP({id})')  # Contains group policy name and id
+                                    break
+                            # Check if the the source ends in /32 remove the /32
+                            if src.endswith('/32'):  # src is an IP address
+                                src = src.replace('/32', '')
+                                for net_object in network_obj_lst:
+                                    if src in net_object.values():
+                                        #net_cidr = net_object['cidr']
+                                        id = net_object['id']
+                                        # If not in list - append
+                                        src_obj_32 = f'OBJ({id})'
+                                        if src_obj_32 not in src_cidr_network_id_lst:
+                                            src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                            break
+                            else:  # src is a policy object name or doesn't exist
+                                for net_object in network_obj_lst:
+                                    if src in net_object.values():
+                                        #net_name = net_object['name']
+                                        id = net_object['id']
+                                        # If not in list - append
+                                        src_obj = f'OBJ({id})'
+                                        if src_obj not in src_cidr_network_id_lst:
+                                            src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
+                                            break
+
+                    # Determine if source was a group by checking length of list
                     list_len = len(src_cidr_group_id_lst)
                     if list_len > 0:
-                        exist_as_group_object = True
+                        src_exist_as_group_object = True
                     else:
-                        exist_as_group_object = False
+                        src_exist_as_group_object = False
 
-                    if exist_as_group_object is False:  # Destination is not a group check network objects to find it
-                        for src in src_cidr_lst:
-                            # Check if the the source ends in /32 remove the /32
-                            if src.endswith('/32'):  # item is an IP address
-                                src = src.replace('/32', '')
-                                print(f'Checking network source {src}')
-                                for net_object in network_obj_lst:
-                                    if src in net_object.values():
-                                        net_cidr = net_object['cidr']
-                                        id = net_object['id']
-                                        print(f'NAME: {src} {net_cidr} {id}')
-                                        src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                        break
-                            else:  # item is a policy object name
-                                print(f'Checking network source {src}')
-                                for net_object in network_obj_lst:
-                                    if src in net_object.values():
-                                        net_name = net_object['name']
-                                        id = net_object['id']
-                                        print(f'NAME: {src} {net_name} {id}')
-                                        src_cidr_network_id_lst.append(f'OBJ({id})')  # Contains group policy name and id
-                                        break
+                    # Determine if source was a network object by checking length of list
+                    list_len = len(src_cidr_network_id_lst)
+                    if list_len > 0:
+                        src_exist_as_network_object = True
+                    else:
+                        src_exist_as_network_object = False
+
+                    # Check to see if the source was found as a group or object
+                    # If not a group or network object alert and EXIT !
+                    if src_exist_as_group_object is False:
+                        if src_exist_as_network_object is False:
+                            print(f"\nCould not find source CIDR: {src} \n")
+                            print("Please check spelling as well as the Group and Network objects to fix issue.\n")
+                            print("Exiting script...")
+                            quit()
+
+                    # Start putting togther the pieces to build FW rule
 
                     # Change dest port from list to sting
                     dest_ports = ','.join(dest_port_lst)
                     # Change source port from list to string
                     src_ports = ','.join(src_port_lst)
 
-                    # Create rule payload there could be objects from group list 
-                    # and network list as src and destCidr
-
-                    src_cidr_string = ''
+                    # Create source and destination values
+                    # To be use in the FW rule payload
+                    # This could be a combination of Group objects
+                    # As well as Network objects
+                    dest_group_cidr_string = ''
+                    dest_network_cidr_string = ''
                     dest_cidr_string = ''
+                    src_group_cidr_string = ''
+                    src_network_cidr_string = ''
+                    src_cidr_string = ''
 
                     # Join all the ids in the destination group id list and network id list
                     if len(dest_cidr_group_id_lst) > 0:
-                        dest_cidr_string = ','.join(dest_cidr_group_id_lst)
-                        print(dest_cidr_string)
+                        dest_group_cidr_string = ','.join(dest_cidr_group_id_lst)
                     if len(dest_cidr_network_id_lst) > 0:
-                        dest_cidr_string = ','.join(dest_cidr_network_id_lst)
+                        dest_network_cidr_string = ','.join(dest_cidr_network_id_lst)
+
+                    if len(dest_group_cidr_string) > 0 and len(dest_network_cidr_string) > 0:
+                        dest_cidr_string = f'{dest_group_cidr_string},{dest_network_cidr_string}'
+                    elif len(dest_group_cidr_string) > 0:
+                        dest_cidr_string = dest_group_cidr_string
+                    else:
+                        dest_cidr_string = dest_network_cidr_string
+
                     # Join all the ids in the source group id list and network id list
                     if len(src_cidr_group_id_lst) > 0:
-                        src_cidr_string = ','.join(src_cidr_group_id_lst)
+                        src_group_cidr_string = ','.join(src_cidr_group_id_lst)
                     if len(src_cidr_network_id_lst) > 0:
-                        src_cidr_string = ','.join(src_cidr_network_id_lst)
+                        src_network_cidr_string = ','.join(src_cidr_network_id_lst)
+
+                    if len(src_group_cidr_string) > 0 and len(src_network_cidr_string) > 0:
+                        src_cidr_string = f'{src_group_cidr_string},{src_network_cidr_string}'
+                    elif len(src_group_cidr_string) > 0:
+                        src_cidr_string = src_group_cidr_string
+                    else:
+                        src_cidr_string = src_network_cidr_string
 
                     # Fill in parameters for firewall rule
                     fw_rule_dict = {
@@ -363,6 +431,7 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                         "srcCidr": src_cidr_string,
                         "syslogEnabled": rule_syslog
                     }
+
                     # Create a list of firewall rules
                     fw_rule_dict_copy = copy.deepcopy(fw_rule_dict)
                     fw_rule_lst.append(fw_rule_dict_copy)
@@ -409,6 +478,7 @@ def create_fw_rules(api_key, base_url, net_id, fw_rule_payload):
           'X-Cisco-Meraki-API-Key': api_key,
           'Content-Type': 'application/json'
         }
+        print(f'payload: {fw_rule_payload}')
 
         response = requests.request("PUT", url, headers=headers, data=payload)
         print(f'Create Firewall Rules response status : {response.reason}')
@@ -428,8 +498,6 @@ def main():
     csv_file, api_key, org_id, net_id = collect_info()
     group_obj_lst = list_group_obj(api_key, org_id)
     network_obj_lst = list_network_obj(api_key, org_id)
-    #print(group_obj_lst)
-    #print(type(group_obj_lst))
     read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst)
 
 
