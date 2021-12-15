@@ -275,7 +275,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                                 dest = dest.replace('/32', '')
                                 for net_object in network_obj_lst:
                                     if dest in net_object.values():
-                                        #net_cidr = net_object['cidr']
                                         id = net_object['id']
                                         dest_obj_32 = f'OBJ({id})'
                                         if dest_obj_32 not in dest_cidr_network_id_lst:
@@ -284,7 +283,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                             else:   # dest is a policy object name or doesn't exist
                                 for net_object in network_obj_lst:
                                     if dest in net_object.values():
-                                        #net_name = net_object['name']
                                         id = net_object['id']
                                         dest_obj = f'OBJ({id})'
                                         if dest_obj not in dest_cidr_network_id_lst:
@@ -324,7 +322,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                         # Is source a group?
                         for grp_object in group_obj_lst:
                             if src in grp_object.values():
-                                #name = grp_object['name']
                                 id = grp_object['id']
                                 src_group_object = f'GRP({id})'
                                 if src_group_object not in src_cidr_group_id_lst:
@@ -335,7 +332,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                                 src = src.replace('/32', '')
                                 for net_object in network_obj_lst:
                                     if src in net_object.values():
-                                        #net_cidr = net_object['cidr']
                                         id = net_object['id']
                                         # If not in list - append
                                         src_obj_32 = f'OBJ({id})'
@@ -345,7 +341,6 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                             else:  # src is a policy object name or doesn't exist
                                 for net_object in network_obj_lst:
                                     if src in net_object.values():
-                                        #net_name = net_object['name']
                                         id = net_object['id']
                                         # If not in list - append
                                         src_obj = f'OBJ({id})'
