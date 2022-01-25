@@ -115,8 +115,9 @@ def read_csv(csv_file, api_key, org_id):
                 category = row['category']
                 type = row['type']
                 cidr = row['cidr']
+                fqdn = row['fqdn']
                 group_name = row['groupName']
-                
+
                 if not name:
                     break
                 # Create a 'linking' dictionary
@@ -151,14 +152,24 @@ def read_csv(csv_file, api_key, org_id):
                 # name, category, type, cidr, groupIds
                 # Assign each key a value
                 # Append the dictionary to obj_dict_lst list
-                # This will be the Body of the API call
-                    policy_object = {
-                        'name': name,
-                        'category': category,
-                        'type': type,
-                        'cidr': cidr,
-                        'groupIds': []
-                    }
+                    if cidr != "":
+                        # This will be the Body of the API call for CIDR objects
+                        policy_object = {
+                            'name': name,
+                            'category': category,
+                            'type': type,
+                            'cidr': cidr,
+                            'groupIds': []
+                        }
+                    else:
+                        # This will be the Body of the API call for FQDN objects
+                        policy_object = {
+                            'name': name,
+                            'category': category,
+                            'type': type,
+                            'fqdn': fqdn,
+                            'groupIds': []
+                        }
                     object_dict_lst.append(policy_object)  # This will be a list of dictionaries
 
             print(f'UNIQUE OBJECT GROUPS: {len(object_groups_lst)}')
@@ -294,6 +305,36 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
                     if network == d['name']:
                         nme = d['name']
                         print(f'Network {network} Name : {nme}')
+                        # Check if object is CIDR
+                        if 'cidr' in d.keys():  # if cidr key exists create payload
+                            action_payload = {
+                                'resource': f'/organizations/{org_id}/policyObjects',
+                                'operation': 'create',
+                                'body': {
+                                    'name': d['name'],
+                                    'category': d['category'],
+                                    'type': d['type'],
+                                    'cidr': d['cidr']
+                                }
+                            }
+                        else:  # create payload with fqdn
+                            action_payload = {
+                                'resource': f'/organizations/{org_id}/policyObjects',
+                                'operation': 'create',
+                                'body': {
+                                    'name': d['name'],
+                                    'category': d['category'],
+                                    'type': d['type'],
+                                    'fqdn': d['fqdn']
+                                }
+                            }
+                        actions_lst.append(action_payload)
+                        count += 1
+        else:   # List is empty - no network objects found in Dashboard
+            for d in obj_dict_lst:
+                if network == d['name']:
+                    # Check if object is CIDR
+                    if 'cidr' in d.keys():  # if cidr key exists create payload
                         action_payload = {
                             'resource': f'/organizations/{org_id}/policyObjects',
                             'operation': 'create',
@@ -304,21 +345,17 @@ def check_net_obj(api_key, obj_names_lst, obj_dict_lst, org_id):
                                 'cidr': d['cidr']
                             }
                         }
-                        actions_lst.append(action_payload)
-                        count += 1
-        else:   # List is empty - no network objects found in Dashboard
-            for d in obj_dict_lst:
-                if network == d['name']:
-                    action_payload = {
-                        'resource': f'/organizations/{org_id}/policyObjects',
-                        'operation': 'create',
-                        'body': {
-                            'name': d['name'],
-                            'category': d['category'],
-                            'type': d['type'],
-                            'cidr': d['cidr']
-                        }
-                    }
+                    else:  # create payload with fqdn
+                        action_payload = {
+                            'resource': f'/organizations/{org_id}/policyObjects',
+                            'operation': 'create',
+                            'body': {
+                                'name': d['name'],
+                                'category': d['category'],
+                                'type': d['type'],
+                                'fqdn': d['fqdn']
+                                }
+                            }
                     actions_lst.append(action_payload)
                     count += 1
 
