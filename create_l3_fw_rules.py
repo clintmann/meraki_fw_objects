@@ -126,7 +126,19 @@ def collect_info():
         else:
             print('That Network Name is not one listed, try another.\n')
 
-    return csv_file, api_key, org_id, net_id
+    while True:
+        # Ask what type of FW rule to create - L3 outbound or site-to-site VPN
+        fw_rule_type = input('What type of firewall rule you would like to configure\n'
+                             ' 1. L3 Outbound \n'
+                             ' 2. Site-to-Site VPN \n'
+                             'Enter 1 or 2: ')
+
+        if fw_rule_type == '1' or '2':
+            break
+        else:
+            print('Please enter 1 or 2.\n')
+
+    return csv_file, api_key, org_id, net_id, fw_rule_type
 
 
 def list_group_obj(api_key, org_id):
@@ -179,7 +191,7 @@ def list_network_obj(api_key, org_id):
 
 
 # Function to read csv file
-def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
+def read_csv(api_key, org_id, net_id, csv_file, group_obj_lst, network_obj_lst, fw_rule_type):
     src_cidr_lst = []
     src_port_lst = []
     dest_cidr_lst = []
@@ -452,9 +464,12 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
                     "rules":
                         fw_rule_lst
                 })
-
-            # Call function to create firewall rules
-            create_fw_rules(api_key, base_url, net_id, fw_rule_payload)
+      
+            if fw_rule_type == '1':
+                # Call function to create firewall rules
+                create_fw_rules(api_key, base_url, net_id, fw_rule_payload)
+            else:
+                create_s2s_vpn_fw_rules(api_key, base_url, org_id, fw_rule_payload)
 
     except IOError:
         print('I/O error')
@@ -462,7 +477,7 @@ def read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst):
     return
 
 
-# Function to make API call to create firewall rules
+# Function to make API call to create L3 firewall rules
 def create_fw_rules(api_key, base_url, net_id, fw_rule_payload):
     url = f'{base_url}/networks/{net_id}/appliance/firewall/l3FirewallRules'
 
@@ -487,13 +502,37 @@ def create_fw_rules(api_key, base_url, net_id, fw_rule_payload):
     return
 
 
+# Function to make API call to create Site to Site VPN firewall rules
+def create_s2s_vpn_fw_rules(api_key, base_url, org_id, fw_rule_payload):
+    url = f'{base_url}/organizations/{org_id}/appliance/vpn/vpnFirewallRules'
+    try:
+        payload = fw_rule_payload
+
+        headers = {
+          'X-Cisco-Meraki-API-Key': api_key,
+          'Content-Type': 'application/json'
+        }
+        print(f'payload: {fw_rule_payload}')
+
+        response = requests.request("PUT", url, headers=headers, data=payload)
+        print(f'Create S2S VPN Firewall Rules response status : {response.reason}')
+        print(f'Create S2S VPN Firewall Rules response code: {response.status_code}')  # We want a Status code of 200
+        print(response.text)
+
+    except HTTPError as http_err:
+        print(f'An HTTP error has occured {http_err}')
+    except Exception as err:
+        print(f'An error has occured {err}')
+    return
+
+
 def main():
     group_obj_lst = []
     network_obj_lst = []
-    csv_file, api_key, org_id, net_id = collect_info()
+    csv_file, api_key, org_id, net_id, fw_rule_type = collect_info()
     group_obj_lst = list_group_obj(api_key, org_id)
     network_obj_lst = list_network_obj(api_key, org_id)
-    read_csv(api_key, net_id, csv_file, group_obj_lst, network_obj_lst)
+    read_csv(api_key, org_id, net_id, csv_file, group_obj_lst, network_obj_lst, fw_rule_type)
 
 
 if __name__ == '__main__':
