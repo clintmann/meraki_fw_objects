@@ -7,7 +7,7 @@
 # The script will import information from a .csv file
 # that contains the following 5 columns:
 #
-# name	category	type	cidr	groupName
+# name	category	type	cidr	fqnn	groupName
 #
 # Note:
 # Object groups can not contain more than 150 policy objects.
