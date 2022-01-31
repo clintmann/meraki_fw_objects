@@ -315,7 +315,7 @@ def read_csv(api_key, org_id, net_id, csv_file, group_obj_lst, network_obj_lst, 
                     else:
                         dest_exist_as_network_object = False
 
-                    # Check to see if the destination was found as a group or object 
+                    # Check to see if the destination was found as a group or object
                     # If not a group or network object alert and EXIT !
                     if dest_exist_as_group_object is False:
                         if dest_exist_as_network_object is False:
@@ -464,7 +464,7 @@ def read_csv(api_key, org_id, net_id, csv_file, group_obj_lst, network_obj_lst, 
                     "rules":
                         fw_rule_lst
                 })
-      
+
             if fw_rule_type == '1':
                 # Call function to create firewall rules
                 create_fw_rules(api_key, base_url, net_id, fw_rule_payload)
