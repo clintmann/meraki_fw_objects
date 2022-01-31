@@ -14,9 +14,9 @@
 # If the number of policy objects for group exceeds the 150 count limit,
 # create an additional group(s) for excess policies.
 #
-# There is a sample template called object-import.csv
+# There is a sample template called sample-object-import.csv
 #
-# This script is used before create_l3_fw_rules.py
+# This script is used before sample-fw_rules.py
 
 
 import os

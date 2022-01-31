@@ -6,8 +6,8 @@
 # This script is used after create_policy_objects.py
 #
 # The script will import information from a .csv file.
-# There is an sample template called fw-rules.csv
-#
+# There is an sample template called sample-fw-rules.csv
+
 
 import os.path
 import requests

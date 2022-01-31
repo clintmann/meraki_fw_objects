@@ -76,4 +76,3 @@ DETAILS:
 - The policy objects and groups will append anything new without touching the existing objects/groups. After the first import, you can use smaller files with just a few new items to add new objects/groups or to adjust the group membership of an existing object.
  
 - The Firewall rules will always overwrite the existing rules with whatever is in the import file. This is a function of how the API call works. If you want to add a rule, you should add it to the .csv file and re-run the *create_fw_rules.py* script
-
