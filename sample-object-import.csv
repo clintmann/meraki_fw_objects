@@ -1,0 +1,17 @@
+﻿name,category,type,cidr,fqdn,groupName
+net_10-10-2-0_24,network,cidr,10.10.2.0/24,,g_management
+net_10-10-10-0_24,network,cidr,10.10.10.0/24,,g_guest
+net_10-10-20-0_24,network,cidr,10.10.20.0/24,,g_lan_users
+net_10-10-30-0_24,network,cidr,10.10.30.0/24,,g_iot_devices
+net_10-10-40-0_24,network,cidr,10.10.40.0/24,,g_lab
+resolver1_opendns_com,network,cidr,208.67.222.222/32,,g_umbrella_dns
+resolver2_opendns_com,network,cidr,208.67.220.220/32,,g_umbrella_dns
+umbrella_test,network,fqdn,,welcome.opendns.com,
+google_dns_1,network,cidr,8.8.8.8/32,,g_google_dns
+google_dns_2,network,cidr,8.8.4.4/32,,g_google_dns
+net_10-0-0-0_8,network,cidr,10.0.0.0/8,,g_RFC-1918
+net_172-16-0-0_12,network,cidr,172.16.0.0/12,,g_RFC-1918
+net_192-168-0-0_16,network,cidr,192.168.0.0/16,,g_RFC-1918
+NIST_server_A,network,fqdn,,time-a-g.nist.gov,g_NIST_time_servers
+NIST_server_B,network,fqdn,,time-b-g.nist.gov,g_NIST_time_servers
+internet_bad_guys,network,fqdn,,internetbadguys.com,

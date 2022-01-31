@@ -1,0 +1,17 @@
+﻿Rule Number,Policy,Comment,Protocol,Source CIDR,Source Port,Destination CIDR,Destination Port,Syslog Enabled
+1,deny,Guest access to internal networks,Any,g_guest,Any,net_10-10-2-0_24,Any,FALSE
+,,,,,,net_10-10-20-0_24,,
+,,,,,,net_10-10-30-0_24,,
+,,,,,,net_10-10-40-0_24,,
+,,,,,,,,
+2,deny,IOT access to internal networks,Any,g_iot_devices,Any,net_10-10-2-0_24,Any,FALSE
+,,,,,,net_10-10-10-0_24,,
+,,,,,,net_10-10-20-0_24,,
+,,,,,,net_10-10-40-0_24,,
+,,,,,,,,
+3,deny,Phishing site,Any,Any,Any,internet_bad_guys,80,FALSE
+,,,,,,,443,
+,,,,,,,,
+4,allow,NTP servers,udp,Any,Any,g_NIST_time_servers,123,FALSE
+,,,,,,,,
+END,END,END,END,END,END,END,END,END
